@@ -70,8 +70,9 @@ function EventRow({ event, isNew }: { event: EventLog; isNew: boolean }) {
               {shortAddr}
             </span>
             <span className="text-xs text-muted-foreground">•</span>
-            <span className="text-xs text-muted-foreground">
-              {formatDistanceToNow(new Date(event.created_at), { addSuffix: true })}
+            <span className="text-xs text-muted-foreground" title={event.block_timestamp ? `Block time: ${new Date(event.block_timestamp).toUTCString()}` : 'DB time (fallback)'}>
+              {formatDistanceToNow(new Date(event.block_timestamp || event.created_at), { addSuffix: true })}
+              {!event.block_timestamp && <span className="text-yellow-500/70 ml-1">*</span>}
             </span>
           </div>
           <p className="text-sm font-medium mt-0.5 truncate text-foreground/90 group-hover:text-foreground transition-colors">

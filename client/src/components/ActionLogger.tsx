@@ -34,12 +34,24 @@ export function ActionLogger() {
         description: "Waiting for confirmation...",
       });
 
-      await tx.wait();
+      const receipt = await tx.wait();
+      
+      // Fetch block timestamp from blockchain
+      let blockTimestamp: Date | undefined;
+      try {
+        const provider = contract.runner?.provider;
+        if (provider && receipt?.blockNumber) {
+          const block = await provider.getBlock(receipt.blockNumber);
+          if (block?.timestamp) {
+            blockTimestamp = new Date(block.timestamp * 1000);
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch block timestamp:", err);
+      }
 
-      // Optimistic update or event listener handling
-      // For this app, we also manually trigger the DB insert for immediate feedback
-      // In a real app, the listener would handle this
-      await insertEvent(account, actionText);
+      // Insert event with blockchain timestamp
+      await insertEvent(account, actionText, blockTimestamp);
 
       toast({
         title: "Success!",

@@ -7,6 +7,7 @@ export interface EventLog {
   user_address: string;
   action: string;
   created_at: string;
+  block_timestamp: string | null;
 }
 
 export function useEvents() {
@@ -29,7 +30,7 @@ export function useEvents() {
       // Recent 50 events
       const result = await pool.query(`
         SELECT * FROM events 
-        ORDER BY created_at DESC 
+        ORDER BY COALESCE(block_timestamp, created_at) DESC 
         LIMIT 50
       `);
       setEvents(result.rows);
@@ -45,17 +46,23 @@ export function useEvents() {
     }
   }, [connectionString, events.length]);
 
-  const insertEvent = async (userAddress: string, action: string) => {
+  const insertEvent = async (userAddress: string, action: string, blockTimestamp?: Date) => {
     if (!connectionString) return;
 
     try {
       const pool = new Pool({ connectionString });
-      await pool.query(
-        'INSERT INTO events (user_address, action, created_at) VALUES ($1, $2, NOW())',
-        [userAddress, action]
-      );
+      if (blockTimestamp) {
+        await pool.query(
+          'INSERT INTO events (user_address, action, created_at, block_timestamp) VALUES ($1, $2, NOW(), $3)',
+          [userAddress, action, blockTimestamp.toISOString()]
+        );
+      } else {
+        await pool.query(
+          'INSERT INTO events (user_address, action, created_at) VALUES ($1, $2, NOW())',
+          [userAddress, action]
+        );
+      }
       await pool.end();
-      // Immediately refresh list
       fetchEvents(); 
     } catch (err) {
       console.error("Failed to insert event:", err);
