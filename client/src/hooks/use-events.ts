@@ -1,6 +1,5 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Pool } from '@neondatabase/serverless';
-import { useToast } from './use-toast';
 
 export interface EventLog {
   id: number;
@@ -9,31 +8,24 @@ export interface EventLog {
   created_at: string;
 }
 
-// Keep connection outside to avoid recreation, but serverless pools are lightweight
-const connectionString = import.meta.env.VITE_DATABASE_URL;
-
 export function useEvents() {
   const [events, setEvents] = useState<EventLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dbError, setDbError] = useState<string | null>(null);
-  const { toast } = useToast();
-  
-  // Ref to track if we've already shown an error to avoid spamming toast
-  const hasShownError = useRef(false);
+  const [isConnected, setIsConnected] = useState(false);
+
+  const connectionString = import.meta.env.VITE_DATABASE_URL;
 
   const fetchEvents = useCallback(async () => {
     if (!connectionString) {
-      if (!hasShownError.current) {
-        setDbError("Missing VITE_DATABASE_URL environment variable");
-        hasShownError.current = true;
-      }
+      setDbError("Missing VITE_DATABASE_URL");
       setIsLoading(false);
       return;
     }
 
     try {
       const pool = new Pool({ connectionString });
-      // Recent 50 events
+      // Fetch recent 50 events
       const result = await pool.query(`
         SELECT * FROM events 
         ORDER BY created_at DESC 
@@ -42,17 +34,18 @@ export function useEvents() {
       setEvents(result.rows);
       await pool.end();
       setDbError(null);
+      setIsConnected(true);
     } catch (err: any) {
       console.error("Database fetch error:", err);
-      // Don't show toast on every poll failure, just log
-      if (events.length === 0 && !hasShownError.current) { 
-         setDbError("Failed to connect to Neon database");
-         hasShownError.current = true;
+      // Only set error if we haven't successfully connected before or if we have no data
+      if (events.length === 0) {
+        setDbError("Failed to connect to Neon database");
+        setIsConnected(false);
       }
     } finally {
       setIsLoading(false);
     }
-  }, [events.length]);
+  }, [connectionString, events.length]);
 
   const insertEvent = async (userAddress: string, action: string) => {
     if (!connectionString) return;
@@ -64,22 +57,17 @@ export function useEvents() {
         [userAddress, action]
       );
       await pool.end();
-      // Immediately refresh list
-      fetchEvents(); 
+      fetchEvents(); // Immediate refresh
     } catch (err) {
       console.error("Failed to insert event:", err);
-      toast({
-        title: "Database Error",
-        description: "Failed to save event to database log",
-        variant: "destructive"
-      });
+      throw err;
     }
   };
 
-  // Polling effect
+  // Poll every 2 seconds
   useEffect(() => {
     fetchEvents();
-    const interval = setInterval(fetchEvents, 2000); // Poll every 2s
+    const interval = setInterval(fetchEvents, 2000);
     return () => clearInterval(interval);
   }, [fetchEvents]);
 
@@ -87,6 +75,7 @@ export function useEvents() {
     events,
     isLoading,
     dbError,
+    isConnected,
     insertEvent
   };
 }
