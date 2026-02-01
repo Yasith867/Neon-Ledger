@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { ConnectButton } from "./ConnectButton";
 import { useWeb3 } from "@/hooks/use-web3";
 import { clsx } from "clsx";
-import { Activity, LayoutDashboard, Hexagon, Wifi } from "lucide-react";
+import { Activity, LayoutDashboard, Hexagon } from "lucide-react";
 
 interface LayoutProps {
   children: ReactNode;
@@ -30,7 +30,7 @@ export function Layout({ children }: LayoutProps) {
         <div className="container mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-8">
             {/* Logo */}
-            <div className="flex items-center gap-2 group cursor-default">
+            <div className="flex items-center gap-2 group cursor-default select-none">
               <div className="relative">
                 <div className="absolute inset-0 bg-primary/40 blur-lg rounded-full opacity-50 group-hover:opacity-100 transition-opacity" />
                 <Hexagon className="w-8 h-8 text-primary relative z-10" />
@@ -66,11 +66,11 @@ export function Layout({ children }: LayoutProps) {
           <div className="flex items-center gap-4">
             {/* Network LIVE Indicator */}
             <div className={clsx(
-              "hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold tracking-wide transition-colors",
+              "hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-semibold tracking-wide transition-colors cursor-help",
               isLive 
                 ? "bg-green-500/10 border-green-500/20 text-green-500" 
                 : "bg-muted/40 border-white/5 text-muted-foreground"
-            )}>
+            )} title={isLive ? "Connected to Polygon Amoy" : "Check network connection"}>
               <div className="relative w-2 h-2">
                 {isLive && <div className="status-ring text-green-500" />}
                 <div className={clsx("status-dot w-2 h-2", isLive ? "text-green-500" : "text-muted-foreground bg-muted-foreground")} />

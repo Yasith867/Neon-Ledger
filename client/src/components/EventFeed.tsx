@@ -1,96 +1,94 @@
-import { useEvents } from "@/hooks/use-events";
+import { useEvents, EventLog } from "@/hooks/use-events";
 import { formatDistanceToNow } from "date-fns";
-import { Activity, Clock, Hash, Database } from "lucide-react";
+import { Loader2, Box, ExternalLink, RefreshCw } from "lucide-react";
 import { clsx } from "clsx";
-import { motion, AnimatePresence } from "framer-motion";
 
-export function EventFeed({ limit }: { limit?: number }) {
+export function EventFeed() {
   const { events, isLoading, dbError } = useEvents();
 
-  // Handle various states
-  if (dbError) {
-    return (
-      <div className="glass-panel rounded-2xl p-12 text-center space-y-4 border-destructive/20 bg-destructive/5">
-        <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto text-destructive animate-pulse">
-          <Database className="w-8 h-8" />
+  return (
+    <div className="glass-panel rounded-2xl flex flex-col h-[500px] overflow-hidden">
+      <div className="p-6 border-b border-white/5 flex items-center justify-between bg-card/30">
+        <div>
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            Live Activity Feed
+          </h2>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Real-time events indexed from Polygon Amoy
+          </p>
         </div>
-        <div className="space-y-1">
-          <h3 className="text-lg font-bold text-destructive">Database Connection Failed</h3>
-          <p className="text-sm text-destructive/80 max-w-xs mx-auto">
-            Unable to connect to Neon Postgres. Check your environment variables.
+        
+        {isLoading && <Loader2 className="w-4 h-4 text-muted-foreground animate-spin" />}
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-0 relative">
+        {dbError ? (
+          <div className="flex flex-col items-center justify-center h-full p-8 text-center text-muted-foreground">
+            <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mb-4 text-red-500">
+              <RefreshCw className="w-6 h-6" />
+            </div>
+            <p className="font-medium text-foreground mb-1">Connection Error</p>
+            <p className="text-sm max-w-xs">{dbError}</p>
+          </div>
+        ) : events.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full p-8 text-center text-muted-foreground">
+            <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mb-4">
+              <Box className="w-8 h-8 opacity-50" />
+            </div>
+            <p className="font-medium">No events found</p>
+            <p className="text-sm">Interact with the contract to generate activity.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-white/5">
+            {events.map((event, i) => (
+              <EventRow key={event.id} event={event} isNew={i === 0} />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function EventRow({ event, isNew }: { event: EventLog; isNew: boolean }) {
+  const shortAddr = `${event.user_address.slice(0, 6)}...${event.user_address.slice(-4)}`;
+  
+  return (
+    <div className={clsx(
+      "p-4 hover:bg-white/5 transition-colors flex items-center justify-between gap-4 group",
+      isNew && "animate-in fade-in slide-in-from-top-2 duration-500 bg-primary/5"
+    )}>
+      <div className="flex items-center gap-4 min-w-0">
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-800 to-black border border-white/10 flex items-center justify-center shrink-0">
+          <span className="text-xs font-mono text-muted-foreground">0x</span>
+        </div>
+        
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="font-mono text-xs text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+              {shortAddr}
+            </span>
+            <span className="text-xs text-muted-foreground">•</span>
+            <span className="text-xs text-muted-foreground">
+              {formatDistanceToNow(new Date(event.created_at), { addSuffix: true })}
+            </span>
+          </div>
+          <p className="text-sm font-medium mt-0.5 truncate text-foreground/90 group-hover:text-foreground transition-colors">
+            {event.action}
           </p>
         </div>
       </div>
-    );
-  }
 
-  const displayEvents = limit ? events.slice(0, limit) : events;
-
-  return (
-    <div className="glass-panel rounded-2xl overflow-hidden flex flex-col h-full min-h-[400px]">
-      <div className="p-6 border-b border-white/5 bg-white/[0.02]">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-1 h-5 bg-secondary rounded-full" />
-            <h2 className="text-lg font-bold">Live Activity Feed</h2>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-1 rounded-full bg-white/5 border border-white/5">
-            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-            Real-time Sync
-          </div>
-        </div>
-      </div>
-
-      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-4">
-        {isLoading && events.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 gap-3 text-muted-foreground">
-            <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-            <p className="text-sm font-medium">Syncing with Neon...</p>
-          </div>
-        ) : events.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 gap-4 text-muted-foreground border-2 border-dashed border-white/5 rounded-xl bg-white/[0.01]">
-            <Activity className="w-10 h-10 opacity-20" />
-            <p className="text-sm">No events found on-chain yet.</p>
-          </div>
-        ) : (
-          <AnimatePresence initial={false}>
-            {displayEvents.map((event, index) => (
-              <motion.div
-                key={event.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                className="group relative flex flex-col md:flex-row md:items-center gap-4 p-4 rounded-xl bg-background/40 hover:bg-background/60 border border-white/5 hover:border-white/10 transition-all hover:shadow-lg hover:shadow-black/20"
-              >
-                {/* Visual Connector for Timeline feel */}
-                <div className="absolute left-4 top-0 bottom-0 w-px bg-white/5 md:hidden -z-10" />
-
-                <div className="flex items-center gap-4 min-w-0 flex-1">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-800 to-black border border-white/10 flex items-center justify-center shrink-0 shadow-inner">
-                    <Hash className="w-4 h-4 text-secondary/70" />
-                  </div>
-                  
-                  <div className="min-w-0 space-y-1">
-                    <p className="text-sm font-medium text-white truncate pr-4">
-                      {event.action}
-                    </p>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
-                      <span className="text-secondary/60">
-                        {event.user_address.slice(0, 6)}...{event.user_address.slice(-4)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 text-xs text-muted-foreground/60 shrink-0 md:pl-4 md:border-l md:border-white/5 pl-14">
-                  <Clock className="w-3 h-3" />
-                  {formatDistanceToNow(new Date(event.created_at), { addSuffix: true })}
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        )}
-      </div>
+      <a 
+        href={`https://amoy.polygonscan.com/address/${event.user_address}`} 
+        target="_blank" 
+        rel="noreferrer"
+        className="opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-white/10 rounded-lg text-muted-foreground hover:text-foreground"
+        title="View on Explorer"
+      >
+        <ExternalLink className="w-4 h-4" />
+      </a>
     </div>
   );
 }

@@ -1,58 +1,33 @@
-import { ActionLogger } from "@/components/ActionLogger";
 import { StatusCard } from "@/components/StatusCard";
-import { EventFeed } from "@/components/EventFeed";
-import { motion } from "framer-motion";
+import { ActionLogger } from "@/components/ActionLogger";
+import { Deployer } from "@/components/Deployer";
 
 export default function Dashboard() {
   return (
     <div className="space-y-8">
-      {/* Header Section */}
-      <div className="space-y-2">
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">Manage your on-chain interactions and monitor system health.</p>
-      </div>
+      {/* Deployer Section - Only shows if needed */}
+      <Deployer />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-        {/* Left Column: Interaction & Status */}
-        <div className="lg:col-span-2 space-y-6">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <ActionLogger />
-          </motion.div>
-          
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="md:hidden" // Show status below logger on mobile, but in sidebar on desktop
-          >
-            <StatusCard />
-          </motion.div>
-
-          <motion.div
-             initial={{ opacity: 0, y: 20 }}
-             animate={{ opacity: 1, y: 0 }}
-             transition={{ duration: 0.5, delay: 0.2 }}
-          >
-            <div className="md:h-[400px]">
-               <EventFeed limit={5} />
-            </div>
-          </motion.div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Left Column: Interaction */}
+        <div className="space-y-6">
+          <ActionLogger />
         </div>
 
-        {/* Right Column: Status (Desktop) */}
-        <div className="hidden md:block space-y-6">
-          <motion.div 
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="sticky top-24"
-          >
-            <StatusCard />
-          </motion.div>
+        {/* Right Column: Status */}
+        <div className="space-y-6">
+          <StatusCard />
+          
+          {/* Info Card */}
+          <div className="p-6 rounded-2xl border border-white/5 bg-gradient-to-br from-card/50 to-transparent">
+            <h3 className="text-sm font-semibold mb-2 text-foreground/80">About this Architecture</h3>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              This application demonstrates a serverless Web3 pattern. It connects directly to the blockchain via 
+              <span className="text-secondary"> ethers.js</span> and directly to the database via 
+              <span className="text-green-400"> @neondatabase/serverless</span>. 
+              No backend API servers were used in the making of this dashboard.
+            </p>
+          </div>
         </div>
       </div>
     </div>

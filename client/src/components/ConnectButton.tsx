@@ -1,58 +1,57 @@
 import { useWeb3 } from "@/hooks/use-web3";
-import { Button } from "@/components/ui/button";
-import { Loader2, Wallet, AlertTriangle } from "lucide-react";
+import { Loader2, Wallet, LogOut } from "lucide-react";
 import { clsx } from "clsx";
 
 export function ConnectButton() {
-  const { account, connectWallet, isConnecting, chainId, isContractConfigured } = useWeb3();
-
-  // Polygon Amoy is 80002
-  const isWrongNetwork = account && chainId !== "80002";
+  const { account, connectWallet, isConnecting, error } = useWeb3();
 
   if (account) {
     return (
-      <div className="flex items-center gap-3">
-        {isWrongNetwork && (
-          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs font-medium">
-            <AlertTriangle className="w-3.5 h-3.5" />
-            Switch to Amoy
-          </div>
-        )}
-        
-        <div className={clsx(
-          "flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-sm border shadow-sm transition-all",
-          isWrongNetwork 
-            ? "bg-destructive/10 border-destructive/20 text-destructive"
-            : !isContractConfigured 
-              ? "bg-orange-500/10 border-orange-500/20 text-orange-500" 
-              : "bg-primary/10 border-primary/20 text-primary"
-        )}>
-          <Wallet className="w-4 h-4" />
-          <span>
+      <div className="flex items-center gap-2">
+        <div className="hidden md:block text-right">
+          <p className="text-xs text-muted-foreground">Connected</p>
+          <p className="text-sm font-mono font-medium text-foreground">
             {account.slice(0, 6)}...{account.slice(-4)}
-          </span>
+          </p>
+        </div>
+        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary to-secondary p-[1px]">
+           <div className="w-full h-full rounded-full bg-card flex items-center justify-center">
+             <Wallet className="w-5 h-5 text-primary" />
+           </div>
         </div>
       </div>
     );
   }
 
   return (
-    <Button 
-      onClick={connectWallet} 
-      disabled={isConnecting}
-      className={clsx(
-        "bg-white text-black hover:bg-white/90 font-medium px-6 rounded-lg transition-all",
-        "shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(255,255,255,0.2)] hover:-translate-y-0.5"
+    <div className="flex flex-col items-end">
+      <button
+        onClick={connectWallet}
+        disabled={isConnecting}
+        className={clsx(
+          "px-5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 flex items-center gap-2",
+          "bg-white/10 hover:bg-white/15 text-white border border-white/5",
+          "hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:border-primary/50",
+          isConnecting && "opacity-75 cursor-wait"
+        )}
+      >
+        {isConnecting ? (
+          <>
+            <Loader2 className="w-4 h-4 animate-spin" />
+            Connecting...
+          </>
+        ) : (
+          <>
+            <Wallet className="w-4 h-4" />
+            Connect Wallet
+          </>
+        )}
+      </button>
+      {error && (
+        <span className="text-xs text-red-400 mt-1 absolute top-full right-0">
+          {error}
+        </span>
       )}
-    >
-      {isConnecting ? (
-        <>
-          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-          Connecting...
-        </>
-      ) : (
-        "Connect Wallet"
-      )}
-    </Button>
+    </div>
   );
 }

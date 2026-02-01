@@ -1,13 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
+// We import the artifact to get the ABI for consistency, 
+// even though the address needs to be set manually.
+import EventLoggerArtifact from '@/contracts/EventLogger.json';
 
 // CRITICAL: User must replace this with their deployed contract address
+// After deploying via the UI, copy the address here.
 export const CONTRACT_ADDRESS = "<SET_ME>";
-
-const CONTRACT_ABI = [
-  "function log(string action)",
-  "event ActionLogged(address indexed user, string action)"
-];
 
 declare global {
   interface Window {
@@ -47,7 +46,8 @@ export function useWeb3() {
       // Only init contract if configured
       if (isContractConfigured) {
         const signer = await browserProvider.getSigner();
-        const contractInstance = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        // Use ABI from artifact for consistency
+        const contractInstance = new ethers.Contract(CONTRACT_ADDRESS, EventLoggerArtifact.abi, signer);
         setContract(contractInstance);
       }
 
@@ -118,7 +118,7 @@ export function useWeb3() {
           setContract(null);
         } else {
           setAccount(accounts[0]);
-          connectWallet(); // Re-initialize provider/signer
+          connectWallet();
         }
       });
 

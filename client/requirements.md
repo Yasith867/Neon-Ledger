@@ -1,24 +1,14 @@
 ## Packages
 ethers | Blockchain interaction
-@neondatabase/serverless | Direct serverless Postgres connection
-framer-motion | Smooth animations
-date-fns | Date formatting
+@neondatabase/serverless | Serverless Postgres connection
+framer-motion | Animations
 clsx | Class name utilities
-tailwind-merge | Class merging
+tailwind-merge | Tailwind class merging
+date-fns | Date formatting
+lucide-react | Icons
 
 ## Notes
-Tailwind Config - extend fontFamily:
-fontFamily: {
-  sans: ["'Inter'", "sans-serif"],
-  mono: ["'JetBrains Mono'", "monospace"],
-}
-Colors:
-Background: #0B0F14
-Cards: #121826
-Borders: #1F2937
-Primary: #8B5CF6
-Secondary: #22D3EE
-
-App is frontend-only.
-Database connection via VITE_DATABASE_URL environment variable.
-Blockchain connection to Polygon Amoy.
+- App is frontend-only
+- Blockchain: Polygon Amoy Testnet
+- Database: Neon Postgres via VITE_DATABASE_URL
+- Contract Artifact: Expected at client/src/contracts/EventLogger.json

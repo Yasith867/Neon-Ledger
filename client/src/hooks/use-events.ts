@@ -37,8 +37,7 @@ export function useEvents() {
       setDbError(null);
     } catch (err: any) {
       console.error("Database fetch error:", err);
-      // Don't show toast on every poll failure, just log
-      if (events.length === 0) { // Only show error if we have no data
+      if (events.length === 0) { 
          setDbError("Failed to connect to Neon database");
       }
     } finally {
