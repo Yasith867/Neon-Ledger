@@ -1,14 +1,24 @@
 ## Packages
-ethers | Blockchain interaction library
-@neondatabase/serverless | Direct serverless Postgres connection from browser
-framer-motion | Smooth animations for the feed
+ethers | Blockchain interaction
+@neondatabase/serverless | Direct serverless Postgres connection
+framer-motion | Smooth animations for lists and interactions
+date-fns | Date formatting for event timestamps
+clsx | Utility for constructing className strings conditionally
+tailwind-merge | Utility for merging tailwind classes
 
 ## Notes
 Tailwind Config - extend fontFamily:
 fontFamily: {
-  display: ["var(--font-display)"],
-  body: ["var(--font-body)"],
+  sans: ["'Inter'", "sans-serif"],
+  mono: ["'JetBrains Mono'", "monospace"],
 }
-This app runs entirely in the browser.
-It connects to Polygon Amoy testnet via ethers.js.
-It connects to Neon Postgres via @neondatabase/serverless using VITE_DATABASE_URL.
+Colors:
+Background: #0B0F14
+Cards: #121826
+Borders: #1F2937
+Primary: #8B5CF6
+Secondary: #22D3EE
+
+App is frontend-only.
+Database connection via VITE_DATABASE_URL environment variable.
+Blockchain connection to Polygon Amoy.
