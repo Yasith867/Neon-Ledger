@@ -4,9 +4,8 @@ import { ethers } from 'ethers';
 // even though the address needs to be set manually.
 import EventLoggerArtifact from '@/contracts/EventLogger.json';
 
-// CRITICAL: User must replace this with their deployed contract address
-// After deploying via the UI, copy the address here.
-export const CONTRACT_ADDRESS = "<SET_ME>";
+// Deployed EventLogger contract on Polygon Amoy
+export const CONTRACT_ADDRESS = "0xa8455de1443978c519c770D6c39513dbb13B97d6";
 
 declare global {
   interface Window {
