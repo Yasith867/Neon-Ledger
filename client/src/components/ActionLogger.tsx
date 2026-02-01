@@ -1,122 +1,131 @@
 import { useState } from "react";
 import { useWeb3 } from "@/hooks/use-web3";
 import { useEvents } from "@/hooks/use-events";
-import { Send, Loader2, Terminal } from "lucide-react";
-import { clsx } from "clsx";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Send, Loader2, Terminal, ExternalLink } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 export function ActionLogger() {
-  const { contract, account } = useWeb3();
-  const { insertEvent } = useEvents();
   const [actionText, setActionText] = useState("");
-  const [isMining, setIsMining] = useState(false);
-  const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const { contract, isContractConfigured, account, chainId } = useWeb3();
+  const { insertEvent } = useEvents();
+  const { toast } = useToast();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogAction = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!contract || !actionText.trim()) return;
+    if (!contract || !actionText.trim() || !account) return;
 
-    setIsMining(true);
-    setStatus("idle");
-
+    setIsProcessing(true);
     try {
-      // 1. Send Transaction to Polygon
+      // 1. Send transaction to blockchain
       const tx = await contract.log(actionText);
-      console.log("Transaction sent:", tx.hash);
+      
+      toast({
+        title: "Transaction Sent",
+        description: "Waiting for confirmation on Polygon Amoy...",
+      });
 
       // 2. Wait for confirmation
-      await tx.wait();
+      const receipt = await tx.wait();
       
-      // 3. Log to Neon DB (Optimistic update or after confirm)
-      if (account) {
+      if (receipt.status === 1) {
+        // 3. Log to Neon Database
+        // Note: In a real production app, we would use a backend listener.
+        // For this frontend-only demo, we insert directly after confirmation.
         await insertEvent(account, actionText);
+        
+        toast({
+          title: "Success!",
+          description: "Action logged on-chain and indexed to Neon.",
+          className: "bg-green-500/10 border-green-500/20 text-green-500"
+        });
+        
+        setActionText("");
+      } else {
+        throw new Error("Transaction failed");
       }
-
-      setStatus("success");
-      setActionText("");
-      
-      // Reset success status after 3s
-      setTimeout(() => setStatus("idle"), 3000);
-
-    } catch (err) {
-      console.error("Transaction failed:", err);
-      setStatus("error");
+    } catch (err: any) {
+      console.error("Transaction Error:", err);
+      toast({
+        title: "Error",
+        description: err.message || "Failed to log action",
+        variant: "destructive"
+      });
     } finally {
-      setIsMining(false);
+      setIsProcessing(false);
     }
   };
 
-  const isDisabled = !contract || isMining || !actionText.trim();
+  const isReady = isContractConfigured && !!contract && chainId === "80002";
 
   return (
-    <div className="glass-panel rounded-2xl p-6 md:p-8 h-full flex flex-col justify-between relative overflow-hidden">
+    <div className="glass-panel rounded-2xl p-6 md:p-8 space-y-6 relative overflow-hidden group">
       {/* Background decoration */}
-      <div className="absolute -top-24 -right-24 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
-
-      <div>
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
-            <Terminal className="w-5 h-5" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold">Log Onchain Action</h2>
-            <p className="text-sm text-muted-foreground">Interact with the smart contract</p>
-          </div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Action Message
-            </label>
-            <input
-              type="text"
-              value={actionText}
-              onChange={(e) => setActionText(e.target.value)}
-              placeholder={contract ? "e.g., Hello World" : "Please connect wallet first"}
-              disabled={!contract || isMining}
-              className={clsx(
-                "w-full px-4 py-3 rounded-xl bg-background border-2 border-border/50 transition-all duration-200",
-                "focus:border-primary focus:ring-4 focus:ring-primary/10 outline-none",
-                "placeholder:text-muted-foreground/50",
-                "disabled:opacity-50 disabled:cursor-not-allowed"
-              )}
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={isDisabled}
-            className={clsx(
-              "w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-200",
-              status === "success" 
-                ? "bg-green-500 hover:bg-green-600 text-white"
-                : "bg-primary hover:bg-primary/90 text-primary-foreground",
-              "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-primary shadow-lg shadow-black/20"
-            )}
-          >
-            {isMining ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin" />
-                Processing Transaction...
-              </>
-            ) : status === "success" ? (
-              "Success! Action Logged"
-            ) : (
-              <>
-                <Send className="w-5 h-5" />
-                Send Transaction
-              </>
-            )}
-          </button>
-        </form>
+      <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
+        <Terminal className="w-32 h-32 text-primary rotate-12" />
       </div>
 
-      {!contract && (
-        <div className="mt-6 p-4 rounded-xl bg-secondary/5 border border-secondary/10 text-secondary text-sm flex items-start gap-3">
-          <div className="w-1.5 h-1.5 rounded-full bg-secondary mt-2 flex-shrink-0" />
-          <p>Connect your wallet to interact with the Polygon Amoy testnet contract.</p>
+      <div className="relative z-10 space-y-2">
+        <h2 className="text-2xl font-bold flex items-center gap-3">
+          <div className="w-1 h-6 bg-gradient-to-b from-primary to-purple-600 rounded-full" />
+          Log Onchain Action
+        </h2>
+        <p className="text-muted-foreground text-sm max-w-md">
+          Interact with the Polygon Amoy blockchain. This transaction will be indexed to your Neon Postgres database.
+        </p>
+      </div>
+
+      <form onSubmit={handleLogAction} className="relative z-10 space-y-4">
+        <div className="space-y-2">
+          <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider ml-1">
+            Action Message
+          </label>
+          <div className="relative">
+            <Input
+              value={actionText}
+              onChange={(e) => setActionText(e.target.value)}
+              placeholder="e.g., Hello Wave 5"
+              className="bg-background/50 border-white/10 h-12 pl-4 pr-12 focus:border-primary/50 focus:ring-primary/20 transition-all font-mono text-sm"
+              disabled={!isReady || isProcessing}
+            />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <div className={`w-2 h-2 rounded-full ${actionText ? 'bg-primary animate-pulse' : 'bg-muted'}`} />
+            </div>
+          </div>
         </div>
-      )}
+
+        <div className="flex items-center gap-4">
+          <Button 
+            type="submit" 
+            disabled={!isReady || isProcessing || !actionText.trim()}
+            className="flex-1 bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 h-12 rounded-xl font-semibold shadow-lg shadow-primary/20 hover:shadow-primary/30 transition-all active:scale-[0.98]"
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Confirming Transaction...
+              </>
+            ) : (
+              <>
+                <Send className="w-4 h-4 mr-2" />
+                Log Transaction
+              </>
+            )}
+          </Button>
+        </div>
+
+        {!isReady && (
+          <p className="text-center text-xs text-yellow-500/80 bg-yellow-500/5 py-2 rounded-lg border border-yellow-500/10">
+            {!account 
+              ? "Connect wallet to interact" 
+              : !isContractConfigured 
+                ? "Contract not configured" 
+                : "Switch to Polygon Amoy Testnet"}
+          </p>
+        )}
+      </form>
     </div>
   );
 }

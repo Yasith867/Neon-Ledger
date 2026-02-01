@@ -1,103 +1,95 @@
 import { useEvents } from "@/hooks/use-events";
 import { formatDistanceToNow } from "date-fns";
-import { Activity, Box, Hash } from "lucide-react";
+import { Activity, Clock, Hash, Database } from "lucide-react";
+import { clsx } from "clsx";
 import { motion, AnimatePresence } from "framer-motion";
 
-export function EventFeed() {
+export function EventFeed({ limit }: { limit?: number }) {
   const { events, isLoading, dbError } = useEvents();
 
-  if (isLoading) {
-    return (
-      <div className="glass-panel rounded-2xl p-8 flex flex-col items-center justify-center min-h-[400px]">
-        <div className="relative">
-          <div className="w-12 h-12 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-2 h-2 bg-primary rounded-full" />
-          </div>
-        </div>
-        <p className="mt-4 text-muted-foreground animate-pulse">Syncing with Neon DB...</p>
-      </div>
-    );
-  }
-
+  // Handle various states
   if (dbError) {
     return (
-      <div className="glass-panel rounded-2xl p-8 flex flex-col items-center justify-center min-h-[400px] text-center">
-        <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-4">
-          <Activity className="w-8 h-8 text-red-500" />
+      <div className="glass-panel rounded-2xl p-12 text-center space-y-4 border-destructive/20 bg-destructive/5">
+        <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto text-destructive animate-pulse">
+          <Database className="w-8 h-8" />
         </div>
-        <h3 className="text-lg font-bold text-foreground">Connection Error</h3>
-        <p className="text-muted-foreground mt-2 max-w-sm">{dbError}</p>
-        <p className="text-xs text-muted-foreground mt-4">Check VITE_DATABASE_URL environment variable.</p>
+        <div className="space-y-1">
+          <h3 className="text-lg font-bold text-destructive">Database Connection Failed</h3>
+          <p className="text-sm text-destructive/80 max-w-xs mx-auto">
+            Unable to connect to Neon Postgres. Check your environment variables.
+          </p>
+        </div>
       </div>
     );
   }
 
-  if (events.length === 0) {
-    return (
-      <div className="glass-panel rounded-2xl p-8 flex flex-col items-center justify-center min-h-[400px] text-center">
-        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center mb-4">
-          <Box className="w-8 h-8 text-muted-foreground" />
-        </div>
-        <h3 className="text-lg font-bold text-foreground">No Activity Yet</h3>
-        <p className="text-muted-foreground mt-2">Log an action to see it appear here in real-time.</p>
-      </div>
-    );
-  }
+  const displayEvents = limit ? events.slice(0, limit) : events;
 
   return (
-    <div className="glass-panel rounded-2xl overflow-hidden flex flex-col h-[calc(100vh-12rem)] min-h-[500px]">
-      <div className="p-6 border-b border-white/5 bg-background/50 backdrop-blur-sm sticky top-0 z-10 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary">
-            <Activity className="w-4 h-4" />
+    <div className="glass-panel rounded-2xl overflow-hidden flex flex-col h-full min-h-[400px]">
+      <div className="p-6 border-b border-white/5 bg-white/[0.02]">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-1 h-5 bg-secondary rounded-full" />
+            <h2 className="text-lg font-bold">Live Activity Feed</h2>
           </div>
-          <h2 className="text-lg font-bold">Live Onchain Activity</h2>
-        </div>
-        <div className="flex items-center gap-2 text-xs font-mono text-muted-foreground bg-white/5 px-3 py-1 rounded-full">
-          <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-          Live Feed
+          <div className="flex items-center gap-2 text-xs text-muted-foreground px-3 py-1 rounded-full bg-white/5 border border-white/5">
+            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+            Real-time Sync
+          </div>
         </div>
       </div>
 
-      <div className="overflow-y-auto flex-1 p-6 space-y-4 custom-scrollbar">
-        <AnimatePresence initial={false}>
-          {events.map((event) => (
-            <motion.div
-              key={event.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ duration: 0.3 }}
-              className="group p-4 rounded-xl bg-background/40 border border-white/5 hover:border-primary/30 hover:bg-white/5 transition-all duration-300"
-            >
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-primary/20 to-secondary/20 flex items-center justify-center flex-shrink-0 border border-white/5 mt-1 md:mt-0">
-                    <Hash className="w-5 h-5 text-foreground/80" />
+      <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 space-y-4">
+        {isLoading && events.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-48 gap-3 text-muted-foreground">
+            <div className="w-8 h-8 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+            <p className="text-sm font-medium">Syncing with Neon...</p>
+          </div>
+        ) : events.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-48 gap-4 text-muted-foreground border-2 border-dashed border-white/5 rounded-xl bg-white/[0.01]">
+            <Activity className="w-10 h-10 opacity-20" />
+            <p className="text-sm">No events found on-chain yet.</p>
+          </div>
+        ) : (
+          <AnimatePresence initial={false}>
+            {displayEvents.map((event, index) => (
+              <motion.div
+                key={event.id}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.05 }}
+                className="group relative flex flex-col md:flex-row md:items-center gap-4 p-4 rounded-xl bg-background/40 hover:bg-background/60 border border-white/5 hover:border-white/10 transition-all hover:shadow-lg hover:shadow-black/20"
+              >
+                {/* Visual Connector for Timeline feel */}
+                <div className="absolute left-4 top-0 bottom-0 w-px bg-white/5 md:hidden -z-10" />
+
+                <div className="flex items-center gap-4 min-w-0 flex-1">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gray-800 to-black border border-white/10 flex items-center justify-center shrink-0 shadow-inner">
+                    <Hash className="w-4 h-4 text-secondary/70" />
                   </div>
-                  <div>
-                    <h3 className="font-medium text-foreground text-lg">{event.action}</h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs font-mono text-primary bg-primary/10 px-2 py-0.5 rounded">
+                  
+                  <div className="min-w-0 space-y-1">
+                    <p className="text-sm font-medium text-white truncate pr-4">
+                      {event.action}
+                    </p>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground font-mono">
+                      <span className="text-secondary/60">
                         {event.user_address.slice(0, 6)}...{event.user_address.slice(-4)}
                       </span>
                     </div>
                   </div>
                 </div>
-                
-                <div className="text-right pl-14 md:pl-0">
-                  <p className="text-xs text-muted-foreground font-medium">
-                    {formatDistanceToNow(new Date(event.created_at), { addSuffix: true })}
-                  </p>
-                  <p className="text-[10px] text-muted-foreground/60 font-mono mt-1 uppercase tracking-wide">
-                    Confirmed
-                  </p>
+
+                <div className="flex items-center gap-2 text-xs text-muted-foreground/60 shrink-0 md:pl-4 md:border-l md:border-white/5 pl-14">
+                  <Clock className="w-3 h-3" />
+                  {formatDistanceToNow(new Date(event.created_at), { addSuffix: true })}
                 </div>
-              </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
+              </motion.div>
+            ))}
+          </AnimatePresence>
+        )}
       </div>
     </div>
   );

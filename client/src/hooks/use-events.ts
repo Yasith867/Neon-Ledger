@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Pool } from '@neondatabase/serverless';
+import { useToast } from './use-toast';
 
 export interface EventLog {
   id: number;
@@ -12,20 +13,20 @@ export function useEvents() {
   const [events, setEvents] = useState<EventLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dbError, setDbError] = useState<string | null>(null);
-  const [isConnected, setIsConnected] = useState(false);
+  const { toast } = useToast();
 
   const connectionString = import.meta.env.VITE_DATABASE_URL;
 
   const fetchEvents = useCallback(async () => {
     if (!connectionString) {
-      setDbError("Missing VITE_DATABASE_URL");
+      setDbError("Missing VITE_DATABASE_URL environment variable");
       setIsLoading(false);
       return;
     }
 
     try {
       const pool = new Pool({ connectionString });
-      // Fetch recent 50 events
+      // Recent 50 events
       const result = await pool.query(`
         SELECT * FROM events 
         ORDER BY created_at DESC 
@@ -34,13 +35,11 @@ export function useEvents() {
       setEvents(result.rows);
       await pool.end();
       setDbError(null);
-      setIsConnected(true);
     } catch (err: any) {
       console.error("Database fetch error:", err);
-      // Only set error if we haven't successfully connected before or if we have no data
-      if (events.length === 0) {
-        setDbError("Failed to connect to Neon database");
-        setIsConnected(false);
+      // Don't show toast on every poll failure, just log
+      if (events.length === 0) { // Only show error if we have no data
+         setDbError("Failed to connect to Neon database");
       }
     } finally {
       setIsLoading(false);
@@ -57,17 +56,22 @@ export function useEvents() {
         [userAddress, action]
       );
       await pool.end();
-      fetchEvents(); // Immediate refresh
+      // Immediately refresh list
+      fetchEvents(); 
     } catch (err) {
       console.error("Failed to insert event:", err);
-      throw err;
+      toast({
+        title: "Database Error",
+        description: "Failed to save event to database",
+        variant: "destructive"
+      });
     }
   };
 
-  // Poll every 2 seconds
+  // Polling effect
   useEffect(() => {
     fetchEvents();
-    const interval = setInterval(fetchEvents, 2000);
+    const interval = setInterval(fetchEvents, 2000); // Poll every 2s
     return () => clearInterval(interval);
   }, [fetchEvents]);
 
@@ -75,7 +79,7 @@ export function useEvents() {
     events,
     isLoading,
     dbError,
-    isConnected,
-    insertEvent
+    insertEvent,
+    isConnected: !dbError && !!connectionString
   };
 }

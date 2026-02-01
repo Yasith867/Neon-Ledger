@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { ethers } from 'ethers';
 
-// Placeholder contract address - User should replace this with their deployed contract
-const CONTRACT_ADDRESS = "0x0000000000000000000000000000000000000000";
+// CRITICAL: User must replace this with their deployed contract address
+export const CONTRACT_ADDRESS = "<SET_ME>";
+
 const CONTRACT_ABI = [
   "function log(string action)",
   "event ActionLogged(address indexed user, string action)"
@@ -22,6 +23,9 @@ export function useWeb3() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Check if the user has actually set the contract address
+  const isContractConfigured = CONTRACT_ADDRESS !== "<SET_ME>" && CONTRACT_ADDRESS.startsWith("0x");
+
   const connectWallet = useCallback(async () => {
     if (!window.ethereum) {
       setError("MetaMask is not installed");
@@ -40,9 +44,12 @@ export function useWeb3() {
       setProvider(browserProvider);
       setChainId(network.chainId.toString());
 
-      const signer = await browserProvider.getSigner();
-      const contractInstance = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-      setContract(contractInstance);
+      // Only init contract if configured
+      if (isContractConfigured) {
+        const signer = await browserProvider.getSigner();
+        const contractInstance = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        setContract(contractInstance);
+      }
 
     } catch (err: any) {
       console.error("Failed to connect wallet:", err);
@@ -50,7 +57,7 @@ export function useWeb3() {
     } finally {
       setIsConnecting(false);
     }
-  }, []);
+  }, [isContractConfigured]);
 
   // Auto-connect if permission already granted
   useEffect(() => {
@@ -92,6 +99,7 @@ export function useWeb3() {
     chainId,
     isConnecting,
     error,
-    connectWallet
+    connectWallet,
+    isContractConfigured
   };
 }

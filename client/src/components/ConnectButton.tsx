@@ -1,55 +1,58 @@
 import { useWeb3 } from "@/hooks/use-web3";
-import { Wallet, Loader2, AlertCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Loader2, Wallet, AlertTriangle } from "lucide-react";
 import { clsx } from "clsx";
 
 export function ConnectButton() {
-  const { account, connectWallet, isConnecting, error } = useWeb3();
+  const { account, connectWallet, isConnecting, chainId, isContractConfigured } = useWeb3();
 
-  if (error) {
-    return (
-      <button
-        onClick={connectWallet}
-        className="px-4 py-2 rounded-lg bg-destructive/10 text-destructive border border-destructive/20 hover:bg-destructive/20 transition-colors flex items-center gap-2 text-sm font-medium"
-      >
-        <AlertCircle className="w-4 h-4" />
-        MetaMask Error
-      </button>
-    );
-  }
+  // Polygon Amoy is 80002
+  const isWrongNetwork = account && chainId !== "80002";
 
   if (account) {
     return (
-      <div className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary/10 border border-primary/20 text-primary font-mono text-sm shadow-[0_0_15px_rgba(139,92,246,0.15)]">
-        <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-        {account.slice(0, 6)}...{account.slice(-4)}
+      <div className="flex items-center gap-3">
+        {isWrongNetwork && (
+          <div className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 text-xs font-medium">
+            <AlertTriangle className="w-3.5 h-3.5" />
+            Switch to Amoy
+          </div>
+        )}
+        
+        <div className={clsx(
+          "flex items-center gap-2 px-4 py-2 rounded-lg font-mono text-sm border shadow-sm transition-all",
+          isWrongNetwork 
+            ? "bg-destructive/10 border-destructive/20 text-destructive"
+            : !isContractConfigured 
+              ? "bg-orange-500/10 border-orange-500/20 text-orange-500" 
+              : "bg-primary/10 border-primary/20 text-primary"
+        )}>
+          <Wallet className="w-4 h-4" />
+          <span>
+            {account.slice(0, 6)}...{account.slice(-4)}
+          </span>
+        </div>
       </div>
     );
   }
 
   return (
-    <button
-      onClick={connectWallet}
+    <Button 
+      onClick={connectWallet} 
       disabled={isConnecting}
       className={clsx(
-        "px-5 py-2.5 rounded-lg font-semibold text-sm transition-all duration-300",
-        "bg-gradient-to-r from-primary to-primary/80 text-white shadow-lg shadow-primary/20",
-        "hover:shadow-primary/40 hover:-translate-y-0.5",
-        "active:translate-y-0 active:shadow-md",
-        "disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none",
-        "flex items-center gap-2"
+        "bg-white text-black hover:bg-white/90 font-medium px-6 rounded-lg transition-all",
+        "shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_25px_rgba(255,255,255,0.2)] hover:-translate-y-0.5"
       )}
     >
       {isConnecting ? (
         <>
-          <Loader2 className="w-4 h-4 animate-spin" />
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
           Connecting...
         </>
       ) : (
-        <>
-          <Wallet className="w-4 h-4" />
-          Connect Wallet
-        </>
+        "Connect Wallet"
       )}
-    </button>
+    </Button>
   );
 }

@@ -3,9 +3,8 @@ ethers | Blockchain interaction
 @neondatabase/serverless | Direct serverless Postgres connection
 framer-motion | Smooth animations
 date-fns | Date formatting
-clsx | Class utility
+clsx | Class name utilities
 tailwind-merge | Class merging
-lucide-react | Icons
 
 ## Notes
 Tailwind Config - extend fontFamily:
@@ -14,10 +13,11 @@ fontFamily: {
   mono: ["'JetBrains Mono'", "monospace"],
 }
 Colors:
-Background: #0B0F14 (Deep dark blue/black)
-Cards: #121826 (Slightly lighter dark blue)
-Primary: #8B5CF6 (Purple)
-Secondary: #22D3EE (Cyan)
+Background: #0B0F14
+Cards: #121826
+Borders: #1F2937
+Primary: #8B5CF6
+Secondary: #22D3EE
 
 App is frontend-only.
 Database connection via VITE_DATABASE_URL environment variable.

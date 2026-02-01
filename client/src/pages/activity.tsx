@@ -3,17 +3,17 @@ import { motion } from "framer-motion";
 
 export default function Activity() {
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex flex-col gap-2 mb-6">
-        <h1 className="text-3xl md:text-4xl font-bold text-foreground">Activity Feed</h1>
-        <p className="text-muted-foreground">Real-time stream of actions indexed from Polygon Amoy to Neon Postgres.</p>
+    <div className="h-[calc(100vh-12rem)] min-h-[600px] flex flex-col space-y-6">
+      <div className="space-y-2 shrink-0">
+        <h1 className="text-3xl font-bold tracking-tight">Activity Feed</h1>
+        <p className="text-muted-foreground">Real-time stream of all events indexed from Polygon Amoy.</p>
       </div>
 
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.98 }}
+        animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4 }}
-        className="flex-1"
+        className="flex-1 min-h-0"
       >
         <EventFeed />
       </motion.div>
