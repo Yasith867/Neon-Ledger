@@ -59,6 +59,42 @@ export function useWeb3() {
     }
   }, [isContractConfigured]);
 
+  const switchNetwork = useCallback(async () => {
+    if (!window.ethereum) return;
+    try {
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: "0x13882" }], // 80002
+      });
+    } catch (switchError: any) {
+      // This error code indicates that the chain has not been added to MetaMask.
+      if (switchError.code === 4902) {
+        try {
+          await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [
+              {
+                chainId: "0x13882",
+                chainName: "Polygon Amoy Testnet",
+                rpcUrls: ["https://rpc-amoy.polygon.technology"],
+                nativeCurrency: {
+                  name: "MATIC",
+                  symbol: "MATIC",
+                  decimals: 18,
+                },
+                blockExplorerUrls: ["https://amoy.polygonscan.com"],
+              },
+            ],
+          });
+        } catch (addError) {
+          console.error("Failed to add Amoy network:", addError);
+        }
+      } else {
+        console.error("Failed to switch to Amoy network:", switchError);
+      }
+    }
+  }, []);
+
   // Auto-connect if permission already granted
   useEffect(() => {
     const checkConnection = async () => {
@@ -100,6 +136,7 @@ export function useWeb3() {
     isConnecting,
     error,
     connectWallet,
+    switchNetwork,
     isContractConfigured
   };
 }

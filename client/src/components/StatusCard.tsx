@@ -4,7 +4,7 @@ import { Database, Network, FileCode2, CheckCircle2, XCircle, AlertCircle } from
 import { clsx } from "clsx";
 
 export function StatusCard() {
-  const { chainId, isContractConfigured, account } = useWeb3();
+  const { chainId, isContractConfigured, account, switchNetwork } = useWeb3();
   const { isConnected: isDbConnected, dbError } = useEvents();
 
   // Polygon Amoy Chain ID is 80002
@@ -19,13 +19,15 @@ export function StatusCard() {
     label, 
     value, 
     status, // 'ready' | 'error' | 'warning'
-    message
+    message,
+    onClick
   }: { 
     icon: any, 
     label: string, 
     value: string, 
     status: 'ready' | 'error' | 'warning',
-    message?: string | null 
+    message?: string | null,
+    onClick?: () => void
   }) => (
     <div className="flex items-center justify-between p-4 rounded-xl bg-background/40 border border-white/5 hover:border-white/10 transition-colors group">
       <div className="flex items-center gap-4">
@@ -46,18 +48,34 @@ export function StatusCard() {
       </div>
       
       <div className="flex flex-col items-end gap-1">
-        <div className={clsx(
-          "flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full",
-          status === 'ready' && "bg-green-500/10 text-green-500",
-          status === 'error' && "bg-red-500/10 text-red-500",
-          status === 'warning' && "bg-orange-500/10 text-orange-500"
-        )}>
-          <div className="relative w-2 h-2">
-            {status === 'ready' && <div className="status-ring text-green-500" />}
-            <div className="status-dot w-2 h-2 bg-current" />
+        {onClick ? (
+          <button 
+            onClick={onClick}
+            className={clsx(
+              "flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full transition-all hover:scale-105 active:scale-95 shadow-sm",
+              status === 'error' && "bg-red-500 text-white hover:bg-red-600 shadow-red-500/20",
+              status === 'warning' && "bg-orange-500 text-white hover:bg-orange-600 shadow-orange-500/20"
+            )}
+          >
+            <div className="relative w-2 h-2">
+               <div className="status-dot w-2 h-2 bg-white animate-pulse" />
+            </div>
+            Switch to Amoy
+          </button>
+        ) : (
+          <div className={clsx(
+            "flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider px-2.5 py-1 rounded-full",
+            status === 'ready' && "bg-green-500/10 text-green-500",
+            status === 'error' && "bg-red-500/10 text-red-500",
+            status === 'warning' && "bg-orange-500/10 text-orange-500"
+          )}>
+            <div className="relative w-2 h-2">
+              {status === 'ready' && <div className="status-ring text-green-500" />}
+              <div className="status-dot w-2 h-2 bg-current" />
+            </div>
+            {message}
           </div>
-          {message}
-        </div>
+        )}
       </div>
     </div>
   );
@@ -76,6 +94,7 @@ export function StatusCard() {
           value="Polygon Amoy"
           status={isNetworkReady ? 'ready' : account ? 'error' : 'warning'}
           message={isNetworkReady ? "Live" : account ? "Wrong Network" : "Disconnected"}
+          onClick={(!isNetworkReady && account) ? switchNetwork : undefined}
         />
 
         <StatusItem
