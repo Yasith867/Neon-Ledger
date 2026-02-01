@@ -25,23 +25,47 @@ export function useEvents() {
       return;
     }
 
+    const pool = new Pool({ connectionString });
+
     try {
-      const pool = new Pool({ connectionString });
-      // Recent 50 events
+      // First, try to add block_timestamp column (idempotent)
+      await pool.query(`
+        ALTER TABLE events ADD COLUMN IF NOT EXISTS block_timestamp TIMESTAMP
+      `);
+      
+      // If ALTER succeeds, query with block_timestamp
       const result = await pool.query(`
-        SELECT * FROM events 
+        SELECT id, user_address, action, created_at, block_timestamp
+        FROM events 
         ORDER BY COALESCE(block_timestamp, created_at) DESC 
         LIMIT 50
       `);
       setEvents(result.rows);
-      await pool.end();
       setDbError(null);
     } catch (err: any) {
-      console.error("Database fetch error:", err);
-      if (events.length === 0) { 
-         setDbError("Failed to connect to Neon database");
+      // If ALTER or query fails, try simple query without block_timestamp
+      console.log("Using fallback query (block_timestamp may not exist):", err.message);
+      try {
+        const result = await pool.query(`
+          SELECT id, user_address, action, created_at, NULL as block_timestamp
+          FROM events 
+          ORDER BY created_at DESC 
+          LIMIT 50
+        `);
+        setEvents(result.rows);
+        setDbError(null);
+      } catch (fallbackErr: any) {
+        console.error("Fallback query also failed:", fallbackErr);
+        if (events.length === 0) { 
+          setDbError("Failed to connect to Neon database");
+        }
       }
     } finally {
+      try {
+        await pool.end();
+      } catch (e) {
+        // ignore pool end errors
+      }
       setIsLoading(false);
     }
   }, [connectionString, events.length]);
@@ -49,20 +73,28 @@ export function useEvents() {
   const insertEvent = async (userAddress: string, action: string, blockTimestamp?: Date) => {
     if (!connectionString) return;
 
+    const pool = new Pool({ connectionString });
     try {
-      const pool = new Pool({ connectionString });
       if (blockTimestamp) {
-        await pool.query(
-          'INSERT INTO events (user_address, action, created_at, block_timestamp) VALUES ($1, $2, NOW(), $3)',
-          [userAddress, action, blockTimestamp.toISOString()]
-        );
+        // Try insert with block_timestamp
+        try {
+          await pool.query(
+            'INSERT INTO events (user_address, action, created_at, block_timestamp) VALUES ($1, $2, NOW(), $3)',
+            [userAddress, action, blockTimestamp.toISOString()]
+          );
+        } catch (err) {
+          // Fallback to insert without block_timestamp
+          await pool.query(
+            'INSERT INTO events (user_address, action, created_at) VALUES ($1, $2, NOW())',
+            [userAddress, action]
+          );
+        }
       } else {
         await pool.query(
           'INSERT INTO events (user_address, action, created_at) VALUES ($1, $2, NOW())',
           [userAddress, action]
         );
       }
-      await pool.end();
       fetchEvents(); 
     } catch (err) {
       console.error("Failed to insert event:", err);
@@ -71,6 +103,12 @@ export function useEvents() {
         description: "Failed to save event to database",
         variant: "destructive"
       });
+    } finally {
+      try {
+        await pool.end();
+      } catch (e) {
+        // ignore
+      }
     }
   };
 
